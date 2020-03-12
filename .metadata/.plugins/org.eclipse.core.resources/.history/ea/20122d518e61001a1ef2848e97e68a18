@@ -1,0 +1,295 @@
+package component;
+
+import java.io.IOException;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map.Entry;
+
+public class Predictions {
+	
+	
+	Connection connection = null;
+
+	public void connectDatabase() {
+		try {
+          
+            connection = DriverManager.getConnection("jdbc:postgresql://localhost:5432/taller_1","postgres", "FOXfox7913");
+            boolean valid = connection.isValid(50000);
+            System.out.println(valid ? "TEST OK" : "TEST FAIL");
+            
+        } catch (java.sql.SQLException sqle) {
+            System.out.println("Error: " + sqle);
+        }
+	}
+	
+	public ResultSet getScores(String user) throws SQLException {
+		
+		Statement st = connection.createStatement();
+				
+		String querty = "SELECT  * FROM public.\"COUNT_LIKES\"\n" + 
+						"where \"userId\" = '"+user+"' and \"like\" is not null \n" + 
+						"fetch first 2 rows only;";
+				
+		try {
+
+			return st.executeQuery(querty);
+		}
+		catch(Exception e) {
+			System.out.println("************ERROR********** "+e);
+			System.out.println("************querty********** "+querty);
+		}
+		return null;
+		
+	}
+	
+	public ResultSet getScoresCompare(String user) throws SQLException {
+		
+		Statement st = connection.createStatement();
+				
+		String querty = "SELECT  * FROM public.\"COUNT_LIKES\"\n" + 
+						"where \"userId\" = '"+user+"' and \"like\" is not null \n" + 
+						";";
+				
+		try {
+
+			return st.executeQuery(querty);
+		}
+		catch(Exception e) {
+			System.out.println("************ERROR********** "+e);
+			System.out.println("************querty********** "+querty);
+		}
+		return null;
+		
+	}
+	
+	public ResultSet getUserId(String userId) throws SQLException {
+			
+			Statement st = connection.createStatement();
+			//ResultSet rs = 
+			
+			String querty = "SELECT  DISTINCT \"userId\" FROM public.first_app_registry \n" + 
+							"where \"userId\" != '"+userId+"' ";
+			
+			try {
+				return st.executeQuery(querty);
+			}
+			catch(Exception e) {
+				System.out.println("************ERROR********** "+e);
+				System.out.println("************querty********** "+querty);
+			}
+			return null;
+			
+	}
+	
+	public void setPredictions() {
+
+		Statement st = connection.createStatement();
+		//ResultSet rs = 
+		
+		String querty = "UPDATE public.\"COUNT_LIKES\"\n" + 
+						"SET \"like\" = '"+qualify+"'\n" + 
+						"where \"userId\" = '"+user+"' and  \"artistId\" = '"+artist+"';";
+		
+		try {
+			st.executeQuery(querty);
+		}
+		catch(Exception e) {
+			//System.out.println("************ERROR********** "+e);
+			//System.out.println("************querty********** "+querty);
+		}
+	}
+	
+	public void generateprediction(String usuerObj,ArrayList<Item> matrix,HashMap<String, ArrayList<Item>> matrixPrediction){
+		
+		Iterator itr = matrix.iterator();
+		HashMap<String, String> matrixRes = new HashMap<String, String>();
+		List<Double>  listasim = new ArrayList<Double>();
+		
+		int[ ] usuarioObjetivo = new int[2];
+		int con = 0;
+		
+		while(itr.hasNext()) {
+			Item item = (Item) itr.next();
+			usuarioObjetivo[con]= item.getScore();
+			con++;
+		}
+		
+		double sim = 0;
+		
+		for (Entry<String, ArrayList<Item>> entry : matrixPrediction.entrySet()) {
+			
+			ArrayList<Item> lista = entry.getValue();
+			Iterator itrlista = lista.iterator();
+			int[ ] usuarioGuia = new int[2];
+			int con_ = 0;
+			
+			while(itrlista.hasNext()) {
+				
+				Item item = (Item) itrlista.next();
+				usuarioGuia[con_]= item.getScore();
+				con_++;
+			
+			}
+				
+			sim = (((usuarioObjetivo[0]- (usuarioObjetivo[0]+usuarioObjetivo[1]/2)*(usuarioGuia[0]-(usuarioGuia[0]+usuarioGuia[1]/2))))
+				 +((usuarioObjetivo[1]- (usuarioObjetivo[0]+usuarioObjetivo[1]/2)*(usuarioGuia[1]-(usuarioGuia[0]+usuarioGuia[1]/2)))))
+				 /(Math.sqrt(Math.pow(usuarioObjetivo[0]- (usuarioObjetivo[0]+usuarioObjetivo[1]/2),2)+Math.pow(usuarioObjetivo[0]- (usuarioObjetivo[0]+usuarioObjetivo[1]/2),2))
+				 *Math.sqrt(Math.pow(usuarioGuia[0]- (usuarioGuia[0]+usuarioGuia[1]/2),2)+Math.pow(usuarioGuia[0]- (usuarioGuia[0]+usuarioGuia[1]/2),2)));
+			
+			//System.out.println("clave=" + entry.getKey() + ", valor=" + entry.getValue());
+			listasim.add(sim);
+			
+			System.out.println("SIM: " + sim);
+		
+		}
+		
+		try {
+			Collections.sort(listasim);
+			System.out.println(listasim);
+			System.out.println(listasim.get(listasim.size()-2));
+			System.out.println(listasim.get(listasim.size()-1));
+			
+			List<Double>  preduictions = new ArrayList<Double>();
+			
+			double prediction1 =  (double) ((Math.random()*6)*(listasim.size()-2)+(Math.random()*6)*(listasim.size()-1))/(listasim.size()-2+listasim.size()-1);  		
+			double prediction2 =  (double) ((Math.random()*6)*(listasim.size()-2)+(Math.random()*6)*(listasim.size()-1))/(listasim.size()-2+listasim.size()-1);  
+			double prediction3 =  (double) ((Math.random()*6)*(listasim.size()-2)+(Math.random()*6)*(listasim.size()-1))/(listasim.size()-2+listasim.size()-1);  
+			double prediction4 =  (double) ((Math.random()*6)*(listasim.size()-2)+(Math.random()*6)*(listasim.size()-1))/(listasim.size()-2+listasim.size()-1);  
+			double prediction5 =  (double) ((Math.random()*6)*(listasim.size()-2)+(Math.random()*6)*(listasim.size()-1))/(listasim.size()-2+listasim.size()-1); 
+			
+			preduictions.add(prediction1);
+			preduictions.add(prediction2);
+			preduictions.add(prediction3);
+			preduictions.add(prediction4);
+			preduictions.add(prediction5);
+			
+			loadpredictions(usuerObj,preduictions);
+			
+		}catch(Exception e) {
+			
+		}
+	}
+	
+	public void loadpredictions(String user,List<Double> listPredictions) throws SQLException{
+		
+		Statement st = connection.createStatement();
+
+		
+		String querty = "SELECT * FROM public.first_app_prediction_chart\n" + 
+						"where \"userId\" = '"+user+"' and \"prediction\" is null\n" + 
+						"fetch first 5 rows only;" ;
+		
+		try {
+			
+			ResultSet result = st.executeQuery(querty);
+			int con = 0;
+			
+			while(result.next()) {
+				
+				String artisId = result.getString(3);
+				System.out.println(user+" ******************** "+artisId+ " " + listPredictions.get(con));
+				con++;
+			}
+		}
+		catch(Exception e) {
+			System.out.println("************ERROR********** "+e);
+			System.out.println("************querty********** "+querty);
+		}
+		
+	}
+	
+	public static void main(String [] args) throws IOException, SQLException {
+		
+		Predictions predictions = new Predictions();
+		predictions.connectDatabase();
+		
+		ResultSet scores = predictions.getScores("user_000052");
+		ArrayList<Item> matrix = new ArrayList<Item>();
+		HashMap<String, ArrayList<Item>> matrixPrediction = new HashMap<String, ArrayList<Item>>();
+		   
+		while(scores.next()) {
+			
+			String user = scores.getString(1);
+			String artisId = scores.getString(2);
+			String like = scores.getString(3);
+			matrix.add(new Item(Integer.parseInt(like),artisId));
+		}
+				
+		/**
+		Iterator itr = matrix.iterator();
+		
+		while(itr.hasNext()) {
+			Item item = (Item) itr.next();
+			System.out.println(item.getArtistName()+ " - "+item.getScore());
+		}
+		**/
+		
+		ResultSet user = predictions.getUserId("user_000052");
+		
+		while(user.next()) {	
+			
+			String user_ = user.getString(1);
+			System.out.println("USUARIO DE COMPARACION: " + user_);
+			ResultSet userRest_ = predictions.getScoresCompare(user_);
+			ArrayList<Item> matrix2 = new ArrayList<Item>();
+			
+			while(userRest_.next()) {
+				
+				String userf = userRest_.getString(1);
+				String artisIdf = userRest_.getString(2);
+				String likef = userRest_.getString(3);
+				matrix2.add(new Item(Integer.parseInt(likef),artisIdf));
+
+			}
+			
+			Iterator itr = matrix.iterator();
+			int conGet = 0;
+			int flag = 0;
+			ArrayList<Item> matrixDef = matrixDef = new ArrayList<Item>();
+			try {
+				while(itr.hasNext()) {
+					Item item = (Item) itr.next();
+					
+					Iterator itr2 = matrix2.iterator();
+					
+					while(itr2.hasNext()) {
+						Item item2 = (Item) itr2.next();
+						if(item.getArtistName().equals(item2.getArtistName())) {
+							matrixDef.add(item2);
+							flag= 1;
+							break;
+						}
+						
+						
+					}
+					if(flag == 0) {
+						//System.out.println("SE ROMPE SICLO");
+						break;
+					}
+					
+				}
+				if(flag == 1) {
+					System.out.println("****************CONCIDENCIA**********"+ user_ + " - "+ matrixDef.size());
+					matrixPrediction.put(user_, matrixDef);
+				}
+				
+			}
+			catch(Exception e) {
+				System.out.println("ERROR: "+ e);
+			}
+			
+		}
+		
+		predictions.generateprediction("user_000052",matrix,matrixPrediction);
+		
+	}
+}
